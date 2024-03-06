@@ -1,5 +1,4 @@
 from transformers import RobertaForSequenceClassification, RobertaTokenizer
-from pdf_extraction_tika import read_pdf_list
 from torch.nn.functional import softmax
 from heapq import heappush, heappop
 from tika import parser
