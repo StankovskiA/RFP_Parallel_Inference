@@ -5,11 +5,13 @@ from tika import parser
 from tqdm import tqdm
 import threading
 import argparse
+import logging
 import time
 import csv
 import os
 import re
 
+logging.basicConfig(filename='rfp_script.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 GITHUB_REGEX = r'(?:https?://(?:www\.)?)?github\.com\s*/\s*[a-zA-Z0-9_. -]+\s*/\s*[a-zA-Z0-9_.-]+'
 CODE_GOOGLE_REGEX = r'(?:https?://(?:www\.)?)?code\.google\.com/[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+'
@@ -290,99 +292,101 @@ def get_sentences(pdf_path):
     return references, footnotes, final_sentences + not_final_sentences
 
 def process_files(thread_id, file_paths):
-    with open("rfp_output.csv", "a", newline='') as csvfile:
-        csv_writer = csv.writer(csvfile)
-        for id, file in enumerate(file_paths):
-            references, footnotes, sentences = get_sentences(file)
-            best_sentences = find_top_sentences(sentences)
+    for id, file in enumerate(file_paths):
+        logging.info(f"Thread {thread_id} processing file {id+1} of {len(file_paths)}")
+        references, footnotes, sentences = get_sentences(file)
+        best_sentences = find_top_sentences(sentences)
+        
+        link, final_sentence = '', ''
+        all_footnotes = []
+        reference_numbers = []
+        for sentence in best_sentences:
+            # Look for github links
+            repo_links = get_repo_links(sentence)
+            if repo_links:
+                link = repo_links[0]
+                final_sentence = sentence
+                # print(f'Found {link} in {sentence}')
+                break
+            else:
+                # Use regular expression to find numbers attached to words
+                # Ensure non-duplication
+                square_brackets = re.findall(r'\[\d+\]', sentence)
+                if square_brackets:
+                    reference_numbers.extend(square_brackets)
+                
+                numbers = list(set(re.findall(r'(\[\d+\]|\d+)\S*\b', sentence)))
+                
+                # Remove numbers greater than 30
+                numbers = [num for num in numbers if '[' not in num and 0 < int(num) <= FOOTNOTE_NUM_LIMIT]
+                
+                # If more than 5 numbers, unlikely to be footnotes
+                numbers = numbers if len(numbers) <= 5 else []
+                
+                # Use regular expression to find special characters used as footnotes
+                extra_chars = list(set(re.findall(r'[†‡*]', sentence)))
+                all_footnotes.extend(numbers+extra_chars)
 
-            link, final_sentence = '', ''
-            all_footnotes = []
-            reference_numbers = []
-            for sentence in best_sentences:
-                # Look for github links
-                repo_links = get_repo_links(sentence)
-                if repo_links:
-                    link = repo_links[0]
-                    final_sentence = sentence
-                    # print(f'Found {link} in {sentence}')
-                    break
-                else:
-                    # Use regular expression to find numbers attached to words
-                    # Ensure non-duplication
-                    square_brackets = re.findall(r'\[\d+\]', sentence)
-                    if square_brackets:
-                        reference_numbers.extend(square_brackets)
-                    
-                    numbers = list(set(re.findall(r'(\[\d+\]|\d+)\S*\b', sentence)))
-                    
-                    # Remove numbers greater than 30
-                    numbers = [num for num in numbers if '[' not in num and 0 < int(num) <= FOOTNOTE_NUM_LIMIT]
-                    
-                    # If more than 5 numbers, unlikely to be footnotes
-                    numbers = numbers if len(numbers) <= 5 else []
-                    
-                    # Use regular expression to find special characters used as footnotes
-                    extra_chars = list(set(re.findall(r'[†‡*]', sentence)))
-                    all_footnotes.extend(numbers+extra_chars)
+        # Remove duplicates in all_footnotes while keeping order
+        all_footnotes = list(dict.fromkeys(all_footnotes))
 
-            # Remove duplicates in all_footnotes while keeping order
-            all_footnotes = list(dict.fromkeys(all_footnotes))
-
-            if not link and reference_numbers: # No link found in best matches, look for references or footnotes
-                # print(f'No link found in best matches')
-                if reference_numbers:
-                    # print(f'Reference numbers found: {reference_numbers}')
-                    for ref in reference_numbers:
-                        if ref in references:
-                            repo_links = get_repo_links(references[ref])
-                            if repo_links:
-                                link = repo_links[0]
-                                final_sentence = references[ref]
-                                # print(f'Found {link} in {ref} from references')
-                            break
-                        
-            if not link and all_footnotes:
-                # Look for footnotes in the footnotes dictionary
-                for f in all_footnotes:
-                    if f in footnotes:
-                        link = footnotes[f]
-                        final_sentence = footnotes[f]
-                        # print(f'Found {link} in {f} from footnotes dictionary')
-                        break
-
-                sentences_with_footnote = get_sentences_with_footnote(all_footnotes, sentences, best_sentences)
-
-                # Look for link attached to number in sentence
-                if not link:
-                    for sentence_with_number, footnote_link in sentences_with_footnote:
-                        # print(f"Sentence with number: {sentence_with_number}")
-                        if footnote_link:
-                            link = footnote_link
-                            final_sentence = sentence_with_number
-                            # print(f'Found {link} in {sentence_with_number} from footnote')
-                            break
-                    
-                # Look for sentence with number
-                if not link:
-                    for sentence_with_number, footnote_link in sentences_with_footnote:
-                        repo_links = get_repo_links(sentence_with_number)
+        if not link and reference_numbers: # No link found in best matches, look for references or footnotes
+            # print(f'No link found in best matches')
+            if reference_numbers:
+                # print(f'Reference numbers found: {reference_numbers}')
+                for ref in reference_numbers:
+                    if ref in references:
+                        repo_links = get_repo_links(references[ref])
                         if repo_links:
                             link = repo_links[0]
-                            final_sentence = sentence_with_number
-                            # print(f'Found {link} in {sentence_with_number} from footnote')
-                            break
-                
-            if link:
-                # If link ends with a dot remove it
-                if link[-1] == '.':
-                    link = link[:-1]
-                
-                # If the link ends with .git remove it
-                if link[-4:] == '.git':
-                    link = link[:-4]
+                            final_sentence = references[ref]
+                            # print(f'Found {link} in {ref} from references')
+                        break
+                    
+        if not link and all_footnotes:
+            # Look for footnotes in the footnotes dictionary
+            for f in all_footnotes:
+                if f in footnotes:
+                    link = footnotes[f]
+                    final_sentence = footnotes[f]
+                    # print(f'Found {link} in {f} from footnotes dictionary')
+                    break
 
+            sentences_with_footnote = get_sentences_with_footnote(all_footnotes, sentences, best_sentences)
+
+            # Look for link attached to number in sentence
+            if not link:
+                for sentence_with_number, footnote_link in sentences_with_footnote:
+                    # print(f"Sentence with number: {sentence_with_number}")
+                    if footnote_link:
+                        link = footnote_link
+                        final_sentence = sentence_with_number
+                        # print(f'Found {link} in {sentence_with_number} from footnote')
+                        break
+                
+            # Look for sentence with number
+            if not link:
+                for sentence_with_number, footnote_link in sentences_with_footnote:
+                    repo_links = get_repo_links(sentence_with_number)
+                    if repo_links:
+                        link = repo_links[0]
+                        final_sentence = sentence_with_number
+                        # print(f'Found {link} in {sentence_with_number} from footnote')
+                        break
+            
+        if link:
+            # If link ends with a dot remove it
+            if link[-1] == '.':
+                link = link[:-1]
+            
+            # If the link ends with .git remove it
+            if link[-4:] == '.git':
+                link = link[:-4]
+
+        with open("rfp_output.csv", "a", newline='') as csvfile:
+            csv_writer = csv.writer(csvfile)
             csv_writer.writerow([file, link])
+            logging.info(f"Thread {thread_id} finished processing file {id+1} of {len(file_paths)}")
 
 def main(folder_path: str):
     with open("rfp_output.csv", "w", newline='') as csvfile:
