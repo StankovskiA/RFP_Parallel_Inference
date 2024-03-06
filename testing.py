@@ -383,9 +383,6 @@ def process_files(thread_id, file_paths):
                     link = link[:-4]
 
             csv_writer.writerow([file, link])
-            
-            if id > 2:
-                break
 
 def main(folder_path: str):
     with open("rfp_output.csv", "w", newline='') as csvfile:
