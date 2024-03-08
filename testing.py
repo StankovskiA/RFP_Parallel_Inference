@@ -400,7 +400,7 @@ def main(folder_path: str):
     
     # Get filenames, excluding those with existing DOIs
     filenames = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
-    filenames = [filename for filename in filenames if os.path.splitext(os.path.basename(filename))[0] not in existing_dois]   
+    filenames = [filename for filename in filenames if filename not in existing_dois]   
     
     # Split files among threads
     files_per_thread = len(filenames) // 5
