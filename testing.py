@@ -3,6 +3,7 @@ from torch.nn.functional import softmax
 from heapq import heappush, heappop
 from tika import parser
 from tqdm import tqdm
+import pandas as pd
 import threading
 import argparse
 import logging
@@ -389,13 +390,18 @@ def process_files(thread_id, file_paths):
             logging.info(f"Thread {thread_id} finished processing file {id+1} of {len(file_paths)}")
 
 def main(folder_path: str):
-    with open("rfp_output.csv", "w", newline='') as csvfile:
-        line = ["DOI", "Link"]
-        csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(line)
-    
-    filenames = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
+    # with open("rfp_output.csv", "w", newline='') as csvfile:
+    #     line = ["DOI", "Link"]
+    #     csv_writer = csv.writer(csvfile)
+    #     csv_writer.writerow(line)
 
+    df = pd.read_csv("rfp_output.csv")
+    existing_dois = set(df['DOI'])
+    
+    # Get filenames, excluding those with existing DOIs
+    filenames = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
+    filenames = [filename for filename in filenames if os.path.splitext(os.path.basename(filename))[0] not in existing_dois]   
+    
     # Split files among threads
     files_per_thread = len(filenames) // 5
     file_chunks = [filenames[i:i + files_per_thread] for i in range(0, len(filenames), files_per_thread)]
