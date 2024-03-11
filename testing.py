@@ -389,17 +389,20 @@ def process_files(thread_id, file_paths):
             csv_writer.writerow([file, link])
             logging.info(f"Thread {thread_id} finished processing file {id+1} of {len(file_paths)}")
 
-def main(folder_path: str):
-    # with open("rfp_output.csv", "w", newline='') as csvfile:
-    #     line = ["DOI", "Link"]
-    #     csv_writer = csv.writer(csvfile)
-    #     csv_writer.writerow(line)
-
-    df = pd.read_csv("rfp_output.csv")
-    existing_dois = set(df['DOI'])
-    
+def main(folder_path: str, output: str, first_write: bool) -> None:
+    if first_write:
+        with open(output, "w", newline='') as csvfile:
+            line = ["DOI", "Link"]
+            csv_writer = csv.writer(csvfile)
+            csv_writer.writerow(line)
+        existing_dois = []
+    else:
+        df = pd.read_csv(output)
+        existing_dois = set(df['DOI'])
+        
     # Get filenames, excluding those with existing DOIs
     filenames = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
+    
     filenames = [filename for filename in filenames if filename not in existing_dois]   
     
     # Split files among threads
@@ -422,11 +425,11 @@ if __name__ == "__main__":
 
     # Add command-line arguments
     argparser.add_argument("--path", type=str, help="Path to the folder containing the PDF files", required=True)
-
-    # Add more arguments as needed
+    argparser.add_argument("--output", type=str, help="Name of output file", required=True)
+    argparser.add_argument("--first_write", type=bool, default=True, required=False)
 
     # Parse command-line arguments
     args = argparser.parse_args()
 
     # Call the main function with parsed arguments
-    main(folder_path=args.path)
+    main(folder_path=args.path, output=args.output, first_write=args.first_write)
