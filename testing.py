@@ -389,6 +389,30 @@ def process_files(thread_id, file_paths):
             csv_writer.writerow([file, link])
             logging.info(f"Thread {thread_id} finished processing file {id+1} of {len(file_paths)}")
 
+import os
+import re
+
+def get_latest_versions(folder_path):
+    # Dictionary to store the latest version of each folder
+    latest_versions = {}
+
+    # Iterate through all subdirectories
+    for root, dirs, files in os.walk(folder_path):
+        for folder in dirs:
+            folder_path = os.path.join(root, folder)
+
+            # Extract version information using regular expression
+            match = re.match(r'.*v(\d+)$', folder)
+            if match:
+                version = int(match.group(1))
+                # Update the latest version if the current version is greater
+                latest_versions[folder] = max(version, latest_versions.get(folder, 0))
+
+    # Form the paths to the latest version PDF files
+    pdf_paths = [os.path.join(folder_path, f"{folder}.pdf") for folder, version in latest_versions.items()]
+
+    return pdf_paths
+
 def main(folder_path: str, output: str, first_write: bool) -> None:
     if first_write:
         with open(output, "w", newline='') as csvfile:
@@ -400,8 +424,10 @@ def main(folder_path: str, output: str, first_write: bool) -> None:
         df = pd.read_csv(output)
         existing_dois = set(df['DOI'])
         
+    filenames = get_latest_versions(folder_path)
+       
     # Get filenames, excluding those with existing DOIs
-    filenames = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
+    # filenames = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
     
     filenames = [filename for filename in filenames if filename not in existing_dois]   
     
