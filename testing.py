@@ -409,7 +409,7 @@ def get_latest_versions(folder_path):
                 latest_versions[folder] = max(version, latest_versions.get(folder, 0))
 
     # Form the paths to the latest version PDF files
-    pdf_paths = [os.path.join(folder_path, f"{folder}.pdf") for folder, version in latest_versions.items()]
+    pdf_paths = [os.path.join(folder.replace(".pdf", ""), f"{folder}.pdf") for folder, version in latest_versions.items()]
 
     return pdf_paths
 
