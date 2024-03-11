@@ -399,8 +399,7 @@ def get_latest_versions(folder_path):
     # Iterate through all subdirectories
     for root, dirs, files in os.walk(folder_path):
         for folder in dirs:
-            folder_path = os.path.join(root, folder)
-
+            
             # Extract version information using regular expression
             match = re.match(r'.*v(\d+)$', folder)
             if match:
@@ -409,7 +408,7 @@ def get_latest_versions(folder_path):
                 latest_versions[folder] = max(version, latest_versions.get(folder, 0))
 
     # Form the paths to the latest version PDF files
-    pdf_paths = [os.path.join(folder.replace(".pdf", ""), f"{folder}.pdf") for folder, version in latest_versions.items()]
+    pdf_paths = [os.path.join(folder_path, folder.replace(".pdf", ""), f"{folder}.pdf") for folder, version in latest_versions.items()]
 
     return pdf_paths
 
