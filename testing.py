@@ -292,7 +292,7 @@ def get_sentences(pdf_path):
         
     return references, footnotes, final_sentences + not_final_sentences
 
-def process_files(thread_id, file_paths):
+def process_files(thread_id, file_paths, output_path):
     for id, file in enumerate(file_paths):
         logging.info(f"Thread {thread_id} processing file {id+1} of {len(file_paths)}")
         references, footnotes, sentences = get_sentences(file)
@@ -384,7 +384,7 @@ def process_files(thread_id, file_paths):
             if link[-4:] == '.git':
                 link = link[:-4]
 
-        with open("rfp_output.csv", "a", newline='') as csvfile:
+        with open(output_path, "a", newline='') as csvfile:
             csv_writer = csv.writer(csvfile)
             csv_writer.writerow([file, link])
             logging.info(f"Thread {thread_id} finished processing file {id+1} of {len(file_paths)}")
@@ -437,7 +437,7 @@ def main(folder_path: str, output: str, first_write: bool) -> None:
     # Create and start threads
     threads = []
     for i, files in enumerate(file_chunks, start=1):
-        thread = threading.Thread(target=process_files, args=(i, files))
+        thread = threading.Thread(target=process_files, args=(i, files, output))
         threads.append(thread)
         thread.start()
 
