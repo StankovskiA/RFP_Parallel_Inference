@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification,
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch.nn.functional import softmax
 from heapq import heappush, heappop
 from tika import parser
