@@ -25,7 +25,7 @@ FOOTNOTE_NUM_LIMIT = 30 # Numbers higher than this are not considered as footnot
 UNIQUE_NUM_LIMIT = 10 # Maximum size of unique numbers in a sentence - candidates as footnotes
 
 tokenizer = AutoTokenizer.from_pretrained("allenai/scibert_scivocab_uncased")
-model = AutoModelForSequenceClassification.from_pretrained("scibert-model")
+model = AutoModelForSequenceClassification.from_pretrained("oeg/SciBERT-Repository-Proposal")
 
 def read_pdf_list(pdf_path):
     try:
