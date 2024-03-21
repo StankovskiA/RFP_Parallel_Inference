@@ -393,7 +393,7 @@ def get_latest_versions(main_folder_path):
     latest_versions = {}
 
     # Iterate through all subdirectories inside the main folder
-    for root, dirs, files in os.walk(main_folder_path):
+    for root, dirs, _ in os.walk(main_folder_path):
         for folder in dirs:
             folder_path = os.path.join(root, folder)
             
@@ -405,7 +405,7 @@ def get_latest_versions(main_folder_path):
                 latest_versions[folder_path] = max(version, latest_versions.get(folder_path, 0))
 
     # Form the paths to the latest version PDF files
-    pdf_paths = [os.path.join(folder_path.replace(main_folder_path, ""), f"v{version}", f"v{version}.pdf") for folder_path, version in latest_versions.items()]
+    pdf_paths = [os.path.join(folder_path.replace(main_folder_path, ""), ".pdf") for folder_path, _ in latest_versions.items()]
 
     # Update paths to have true file paths
     pdf_paths = [os.path.join(main_folder_path, path) for path in pdf_paths]
