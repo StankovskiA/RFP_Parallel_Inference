@@ -7,7 +7,6 @@ import pandas as pd
 import threading
 import argparse
 import logging
-import time
 import csv
 import os
 import re
@@ -389,23 +388,27 @@ def process_files(thread_id, file_paths, output_path):
 import os
 import re
 
-def get_latest_versions(folder_path):
+def get_latest_versions(main_folder_path):
     # Dictionary to store the latest version of each folder
     latest_versions = {}
 
-    # Iterate through all subdirectories
-    for root, dirs, files in os.walk(folder_path):
+    # Iterate through all subdirectories inside the main folder
+    for root, dirs, files in os.walk(main_folder_path):
         for folder in dirs:
+            folder_path = os.path.join(root, folder)
             
             # Extract version information using regular expression
             match = re.match(r'.*v(\d+)$', folder)
             if match:
                 version = int(match.group(1))
                 # Update the latest version if the current version is greater
-                latest_versions[folder] = max(version, latest_versions.get(folder, 0))
+                latest_versions[folder_path] = max(version, latest_versions.get(folder_path, 0))
 
     # Form the paths to the latest version PDF files
-    pdf_paths = [os.path.join(folder_path, folder.replace(".pdf", ""), f"{folder}.pdf") for folder, version in latest_versions.items()]
+    pdf_paths = [os.path.join(folder_path.replace(main_folder_path, ""), f"v{version}", f"v{version}.pdf") for folder_path, version in latest_versions.items()]
+
+    # Update paths to have true file paths
+    pdf_paths = [os.path.join(main_folder_path, path) for path in pdf_paths]
 
     return pdf_paths
 
