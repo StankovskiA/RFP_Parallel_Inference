@@ -451,7 +451,8 @@ if __name__ == "__main__":
     # Add command-line arguments
     argparser.add_argument("--path", type=str, help="Path to the folder containing the PDF files", required=True)
     argparser.add_argument("--output", type=str, help="Name of output file", required=True)
-    argparser.add_argument("--first_write", type=bool, default=True, required=False)
+    argparser.add_argument("--first_write", action="store_true", help="Flag indicating whether it's the first write or not")
+
 
     # Parse command-line arguments
     args = argparser.parse_args()
