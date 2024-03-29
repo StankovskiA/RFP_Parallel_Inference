@@ -414,17 +414,20 @@ def get_latest_versions(main_folder_path):
 
 def main(folder_path: str, output: str, first_write: bool) -> None:
     if first_write:
+        logging.info(f"First write to file {output}")
         with open(output, "w", newline='') as csvfile:
             line = ["DOI", "Link"]
             csv_writer = csv.writer(csvfile)
             csv_writer.writerow(line)
         existing_dois = []
     else:
+        logging.info(f"Continued write to file {output}")
         df = pd.read_csv(output)
         existing_dois = set(df['DOI'])
+        print('Existing DOI', list(existing_dois)[0])
         
     filenames = get_latest_versions(folder_path)
-       
+    print('Filename', filenames[0])
     # Get filenames, excluding those with existing DOIs
     # filenames = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
     
