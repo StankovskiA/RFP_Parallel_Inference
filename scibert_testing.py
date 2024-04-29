@@ -434,7 +434,7 @@ def main(folder_path: str, output: str, first_write: bool) -> None:
     filenames = [filename for filename in filenames if filename not in existing_dois]   
     
     # Split files among threads
-    files_per_thread = len(filenames) // 5
+    files_per_thread = len(filenames) // 2
     file_chunks = [filenames[i:i + files_per_thread] for i in range(0, len(filenames), files_per_thread)]
     
     # Create and start threads
